@@ -1,12 +1,15 @@
-{-# LANGUAGE TypeOperators #-} -- For :+: in signatures
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeOperators             #-}
 
-import Data.Char
-import Data.Machine
-import qualified Data.Map as Map
-
+import           Control.Monad.IO.Class
+import           Data.Char
+import           Data.Machine
+import qualified Data.Map               as Map
+import           Data.Set               (Set)
+import qualified Data.Set               as Set
+import           System.IO.Machine
 
 {-
 Simplest possible machine
@@ -173,7 +176,7 @@ Converting a plan into a Machine
     fit :: Monad m => (forall a. k a -> k' a) -> MachineT m k o -> MachineT m k' o
       connect different kinds of machines, swapping one k function for another
 
-    fitM :: (Monad m, Monad m') => (forall a. m a -> m' a) -> MachineT m k o -> MachineT m' k o 
+    fitM :: (Monad m, Monad m') => (forall a. m a -> m' a) -> MachineT m k o -> MachineT m' k o
       connect different kinds of machines, swapping one monad for another
 
     pass :: k o -> Machine k o
@@ -674,3 +677,35 @@ unfoldMealy1 f = go where
     (b, t) -> (b, go t)
 {-# INLINE unfoldMealy1 #-}
 
+
+-- exSrc :: SourceT _ (Set Integer)
+exSrc = source (map Set.singleton [1..50])
+
+exStart :: (MonadIO m) => PlanT (Is (Set Integer)) (Set Integer) m t
+exStart = do
+  x <- await
+  yield x
+  liftIO (appendFile "vals.txt" (show x))
+  diff x
+
+-- diff :: _ -> PlanT _ _ _ _
+diff x = do
+  y <- await
+  yield (x `Set.difference` y)
+  liftIO (appendFile "vals.txt" (show y))
+  diff y
+
+ex = runT $ exSrc ~> (construct exStart)
+
+
+-- start = do
+--   x <- await
+--   yield x
+--   {- record x to disk }
+--   diff x
+
+-- diff x = do
+--   y <- await
+--   yield (y - x)
+--   {- record y to disk -}
+--   diff y
