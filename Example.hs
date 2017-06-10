@@ -4,12 +4,14 @@
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE TypeOperators             #-}
 
+import           Control.Concurrent.MVar
+import           Control.Monad.IO.Class  (MonadIO, liftIO)
 import           Data.Machine
-import           Data.Map     (Map)
-import qualified Data.Map     as Map
-import           Data.Set     (Set)
-import qualified Data.Set     as Set
-import           Data.Text    (Text)
+import           Data.Map                (Map)
+import qualified Data.Map                as Map
+import           Data.Set                (Set)
+import qualified Data.Set                as Set
+import           Data.Text               (Text)
 
 type Interface = Text
 type Timestamp = Int
@@ -29,6 +31,12 @@ samples = [(0,   Map.fromList [("a",100), ("b",101), ("c",102)])
           ,(600, Map.fromList [("a",300), ("b",301), ("c",302)])
           ]
 
+sampless :: Source (Timestamp, TrafficSample)
+sampless = source samples
+
+orderss :: Source (Timestamp, Order)
+orderss = source orders
+
 orders :: [(Timestamp,Order)]
 orders = [(250, Map.singleton 1 (Set.fromList ["a"]))
          ,(500, Map.singleton 1 (Set.fromList ["b","c"]))]
@@ -40,9 +48,20 @@ result = [(0,  Map.empty)             -- <- sample
          ,(600, Map.singleton 1 1209) -- <- sample
          ]
 
+usagePlan :: (MonadIO m) => Usage -> PlanT (Is (Timestamp,TrafficSample)) Usage m t
+usagePlan usage = do
+  sample <- await
+  let newUsage = Map.unionWith (+) usage (snd sample)
+  yield newUsage
+  usagePlan newUsage
+
 main :: IO ()
-main = print "it compiles"
+main = do
+  let usage = Map.empty
+  runT (sampless ~> construct (usagePlan usage)) >>= print
   -- calculate report
+
+
 
 -- counters :: Map (Interface,OrderNo) Counter
 -- counters = Map.fromList
