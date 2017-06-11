@@ -1,12 +1,6 @@
-machines-play
-=============
+zurihac-machines
+================
 
-Playing with https://github.com/ekmett/machines
+Experiments with precomputations using https://github.com/ekmett/machines
 
-This version has been updated for machines 0.2.5
-
-This is an experiment with machines, intending to show working
-examples of the various constructs.
-
-
-
+Based on https://github.com/alanz/machines-play
