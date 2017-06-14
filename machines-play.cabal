@@ -12,8 +12,8 @@ category:            Control
 build-type:          Simple
 cabal-version:       >=1.8
 
-executable machines-play
-  main-is:             Main.hs
+executable original-example
+  main-is:             OriginalExample.hs
   -- other-modules:       
   build-depends:       base
                      , machines
@@ -22,14 +22,14 @@ executable machines-play
                      , containers
                      , conduit
                      , conduit-extra
-                     , concurrent-machines 
 
-executable machines-example
-  main-is:           Example.hs
+executable traffic-report
+  main-is:             TrafficReport.hs
   build-depends:       base
                      , machines
                      , machines-io
                      , text
                      , transformers
                      , containers
-                     , concurrent-machines
+                     , pretty-show
+                     , lifted-base

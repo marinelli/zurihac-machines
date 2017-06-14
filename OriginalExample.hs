@@ -681,21 +681,14 @@ unfoldMealy1 f = go where
 -- exSrc :: SourceT _ (Set Integer)
 exSrc = source (map Set.singleton [1..50])
 
-exStart :: (MonadIO m) => PlanT (Is (Set Integer)) (Set Integer) m t
-exStart = do
-  x <- await
-  yield x
-  liftIO (appendFile "vals.txt" (show x))
-  diff x
-
--- diff :: _ -> PlanT _ _ _ _
+diff :: (MonadIO m) => Set Integer -> PlanT (Is (Set Integer)) (Set Integer) m t
 diff x = do
   y <- await
   yield (x `Set.difference` y)
   liftIO (appendFile "vals.txt" (show y))
   diff y
 
-ex = runT $ exSrc ~> (construct exStart)
+ex = runT $ exSrc ~> (construct (diff Set.empty))
 
 
 -- start = do
