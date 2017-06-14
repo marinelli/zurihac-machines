@@ -4,11 +4,16 @@
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE TypeOperators             #-}
 
+import           Control.Concurrent      (threadDelay)
 import           Control.Concurrent.MVar
 import           Control.Monad.IO.Class  (MonadIO, liftIO)
+import           Data.List               (sum)
 import           Data.Machine
+import           Data.Machine.Concurrent ((>~>))
+import qualified Data.Machine.Concurrent as CM
+import           Data.Machine.Runner
 import           Data.Map                (Map)
-import qualified Data.Map                as Map
+import qualified Data.Map.Strict         as Map
 import           Data.Set                (Set)
 import qualified Data.Set                as Set
 import           Data.Text               (Text)
@@ -26,22 +31,15 @@ type Order = Map OrderNo (Set Interface)
 
 type Report = Map OrderNo Bytes
 
-pushOne :: [(Timestamp,a)] -> IO (Maybe ((Timestamp,a),[(Timestamp,a)]))
-pushOne []     = pure Nothing
-pushOne (s:ss) = pure (Just (s, ss))
+samples :: Source (Timestamp,TrafficSample)
+samples = source (map sample [0..5])
+  where
+  sample s = (s*300, Map.fromList [("eth0", (s*100))
+                                  ,("eth125", (s*100+1))
+                                  ,("eth899", (s*100+2))])
 
-
-samples :: SourceT IO (Timestamp,TrafficSample)
-samples =
-  unfoldT pushOne [(0,   Map.fromList [("eth0",100), ("eth125",101), ("eth899",102)])
-                  ,(300, Map.fromList [("eth0",200), ("eth125",201), ("eth899",202)])
-                  ,(600, Map.fromList [("eth0",300), ("eth125",301), ("eth899",302)])
-                  ]
-
-orders :: SourceT IO (Timestamp, Order)
-orders =
-  unfoldT pushOne [(200, Map.singleton 1 (Set.fromList ["eth0"]))
-                  ,(500, Map.singleton 1 (Set.fromList ["eth125", "eth899"]))]
+orders :: Source (Timestamp, Order)
+orders = source [(600, Map.singleton 1 (Set.fromList ["eth125","eth899"]))]
 
 usagePlan :: (MonadIO m)
           => Usage
@@ -52,39 +50,35 @@ usagePlan usage = do
   yield (fst sample, newUsage)
   usagePlan newUsage
 
-usageMachine :: Usage -> MachineT IO (Is (Timestamp,TrafficSample)) (Timestamp,Usage)
-usageMachine u = construct (usagePlan u)
+-- usagesReference =
+--   source [(0,   Map.fromList [("eth0",  0), ("eth125",  1), ("eth899",  2)])
+--          ,(300, Map.fromList [("eth0",100), ("eth125",102), ("eth899",103)])
+--          ,(600, Map.fromList [("eth0",300), ("eth125",303), ("eth899",306)])
+--          ,(900, Map.fromList [("eth0",600), ("eth125",604), ("eth899",608)])
+--          ...
+--          ]
 
-usagesReference = [(0,   Map.fromList [("eth0",100), ("eth125",101), ("eth899",102)])
-                  ,(300, Map.fromList [("eth0",300), ("eth125",302), ("eth899",303)])
-                  ,(600, Map.fromList [("eth0",600), ("eth125",603), ("eth899",606)])
-                  ]
+reportCombinator :: ProcessT IO a (Timestamp,Order)
+                 -> ProcessT IO b (Timestamp,Usage)
+                 -> WyeT IO a b Report
+reportCombinator us os = do
+  let latestOrders = Map.empty
+      latestUsage = Map.empty
+  CM.wye us os (construct (combine latestOrders latestUsage))
+  where
+  combine o u = do
+    x <- awaits Z
+    case x of
+      Left (_,o')  -> yield (recalculateOrder o' u) >>  combine o' u
+      Right (_,u') -> yield (recalculateOrder o  u') >> combine o  u'
+  recalculateOrder o' u' = Map.map (sumUsage u') o'
+  sumUsage u' ifs = sum (u' `Map.restrictKeys` ifs)
 
-reportMachine :: ProcessT IO a (Timestamp,Order)
-              -> ProcessT IO b (Timestamp,Usage)
-              -> WyeT IO a b String
-reportMachine us os = wye us os $ repeatedly $ do
-  x <- awaits Z
-  case x of
-    Left a  -> yield (show a)
-    Right a -> yield (show a)
-
-reportReference = [(0,   Map.empty)            -- <- sample
-                  ,(250, Map.singleton 1 100)  -- <- order
-                  ,(300, Map.singleton 1 300)  -- <- sample
-                  ,(500, Map.singleton 1 605)  -- <- order
-                  ,(600, Map.singleton 1 1209) -- <- sample
-                  ]
-
+reportReference = Map.singleton 1 3018
 
 main :: IO ()
 main = do
-  let usages = samples ~> usageMachine Map.empty
+  let usages = samples ~> (construct (usagePlan Map.empty))
+      report = reportCombinator orders usages ~> final
   runT usages >>= pPrint
-  runT (reportMachine orders usages) >>= pPrint
-  -- calculate report
-
-
-
--- counters :: Map (Interface,OrderNo) Counter
--- counters = Map.fromList
+  runT report >>= pPrint

@@ -25,9 +25,11 @@ executable original-example
 
 executable traffic-report
   main-is:             TrafficReport.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , machines
                      , machines-io
+                     , concurrent-machines
                      , text
                      , transformers
                      , containers

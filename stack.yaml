@@ -43,6 +43,7 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - concurrent-machines-0.3.0
+- containers-0.5.10.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}
