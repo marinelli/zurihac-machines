@@ -35,3 +35,16 @@ executable traffic-report
                      , containers
                      , pretty-show
                      , lifted-base
+
+executable traffic-report-streams
+  main-is:             TrafficReportStreams.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , streaming
+                     , streaming-commons
+                     , text
+                     , transformers
+                     , containers
+                     , pretty-show
+                     , async
+                     , stm
