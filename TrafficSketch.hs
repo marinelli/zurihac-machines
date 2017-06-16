@@ -139,15 +139,15 @@ main :: IO ()
 main =
   do
     pPrint samples
-
     putStr "\n\n"
 
-    let usages = source samples ~> usageMachine Map.empty
-    runT usages >>= pPrint
+    let usages_machine = source samples ~> usageMachine Map.empty
+    usages <- runT usages_machine
 
+    pPrint usages
     putStr "\n\n"
 
-    let report = computeEvents Nothing (mergeEvents orders usagesReference)
+    let report = computeEvents Nothing (mergeEvents orders usages)
     pPrint report
 
     return ()
