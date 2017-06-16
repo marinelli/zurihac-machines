@@ -33,3 +33,15 @@ executable traffic-report
                      , containers
                      , pretty-show
                      , lifted-base
+
+executable traffic-sketch
+  main-is:             TrafficSketch.hs
+  build-depends:       base
+                     , machines
+                     , machines-io
+                     , text
+                     , transformers
+                     , containers
+                     , pretty-show
+                     , lifted-base
+
