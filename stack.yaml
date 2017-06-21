@@ -44,6 +44,8 @@ packages:
 extra-deps:
 - concurrent-machines-0.3.0
 - containers-0.5.10.2
+- lens-4.15.3
+- th-abstraction-0.2.2.0
 
 # Override default flag values for local packages and extra-deps
 flags: {}

@@ -78,7 +78,7 @@ reportReference = Map.singleton 1 3018
 
 main :: IO ()
 main = do
-  let usages = samples ~> (construct (usagePlan Map.empty))
+  let usages = samples ~> construct (usagePlan Map.empty)
       report = reportCombinator orders usages ~> final
   runT usages >>= pPrint
   runT report >>= pPrint

@@ -32,7 +32,7 @@ type Order = Map OrderNo (Set Interface)
 type Report = Map OrderNo Bytes
 
 samples :: Stream (Of (Timestamp,TrafficSample)) IO ()
-samples = S.take 6 $ S.each $ map sample $ [0..]
+samples = S.take 100001 $ S.each $ map sample $ [0..]
   where
   sample s = (s*300, Map.fromList [("eth0", (s*100))
                                   ,("eth125", (s*100+1))
@@ -97,4 +97,4 @@ yBlocking as bs f ia ib = do
 -- reportReference = Map.singleton 1 3018
 
 main :: IO ()
-main = S.print (y (S.delay 0.1 usages) (S.delay 0.5 orders) report (0, Map.empty) (0, Map.empty))
+main = S.print (y usages orders report (0, Map.empty) (0, Map.empty))
