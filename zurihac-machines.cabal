@@ -1,12 +1,12 @@
-name:                machines-play
+name:                zurihac-machines
 version:             0.1.0.0
 synopsis:            Playing with Haskell Machines
 -- description:         
-homepage:            https://github.com/alanz/machines-play
+homepage:            
 license:             BSD3
 license-file:        LICENSE
-author:              Alan Zimmerman
-maintainer:          alan.zimm@gmail.com
+author:              
+maintainer:          
 -- copyright:           
 category:            Control
 build-type:          Simple
@@ -45,3 +45,13 @@ executable traffic-sketch
                      , pretty-show
                      , lifted-base
 
+executable traffic-paolino
+  main-is:             TrafficPaolino.hs
+  build-depends:       base
+                     , machines
+                     , text
+                     , transformers
+                     , containers
+                     , stm
+                     , lens
+                     , pointed
